@@ -26,15 +26,15 @@ setup in your own web server / Webサーバー上に配置してください
 
 ## How to Use / 使い方
 
-- Skyway に登録し、API Key を取得してください。
-- 併せて、自分のサーバーのドメインを、Skywayの利用ドメインに設定してください。
+* Skyway に登録し、API Key を取得してください。
+* 併せて、自分のサーバーのドメインを、Skywayの利用ドメインに設定してください。
 
-- index.html をChrome/Firefoxで開き、APIキー指定してください
-- [Start Video] --> [Connect] で Skywayによる通話を開始してください
-- mix.html をChromeで開き、APIキー指定してください
-- [Connect]ボタンで接続、映像/音声合成を開始します
-- [Start Record]で録画開始、[Stop Record]で録画を終了します
-- [Downlaod]のリンクから、録画したファイルを保存できます
+* index.html をChrome/Firefoxで複数開き、それぞれ同じAPIキー指定してください
+* [Start Video] --> [Connect] で Skywayによる通話を開始してください
+* mix.html をChromeで開き、APIキー指定してください
+* [Connect]ボタンで接続、映像/音声合成を開始します
+* [Start Record]で録画開始、[Stop Record]で録画を終了します
+* [Downlaod]のリンクから、録画したファイルを保存できます
 
 #### NOTE / 注意
 
