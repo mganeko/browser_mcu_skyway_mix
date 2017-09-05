@@ -1,0 +1,428 @@
+<!doctype html>
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+ <title>MCU for Skyway</title>
+ <script type='text/javascript' src='https://cdn.skyway.io/skyway.js'></script>
+ <script type='text/javascript' src='core/js/browser_mcu_core.js'></script>
+ <script>
+   function _assert(desc, v) {
+     if (v) {
+       return;
+     }
+     else {
+       let caller = _assert.caller || 'Top level';
+       console.error('ASSERT in %s, %s is :', caller, desc, v);
+     }
+   }
+  </script>
+</head>
+<body>
+  skyway api key <input id="api_key_text" type="text" size="32"></input>
+  <br />
+  <!--
+  <button type="button" onclick="startVideo();">Start Video</button>
+  <button type="button" onclick="stopVideo();">Stop Video</button>
+  &nbsp;
+  -->
+  <!--
+  <button type="button" onclick="connect();">Connect</button>
+  <button type="button" onclick="hangUp();">Hang Up</button> 
+  -->
+  <button type="button" onclick="joinRoom();">Connect</button>
+  <button type="button" onclick="leaveRoom();">Hang Up</button> 
+  &nbsp;
+  <button onclick="startRecording()">Start Recording</button>
+  <button onclick="stopRecording()">Stop Recording</button>
+  <a href="#" id="downloadlink">Download</a>
+  <div>
+    <video id="local_video" autoplay style="width: 160px; height: 120px; border: 1px solid black;"></video>
+    <video id="playback_video" autoplay style="width: 160px; height: 120px; border: 1px solid black;"></video>
+  </div>
+  <canvas id="mix_canvas" width="640" height="480"></canvas>
+  <div id="container">
+  </div>
+  <!--
+  <p>SDP to send:<br />
+    <textarea id="text_for_send_sdp" rows="5" cols="60" readonly="readonly">SDP to send</textarea>
+  </p>
+  <p>SDP received:&nbsp;
+    <button type="button" onclick="onSdpText();">Receive remote SDP</button>
+    <br />
+    <textarea id="text_for_receive_sdp" rows="5" cols="60"></textarea>
+  </p>
+  -->
+</body>
+<script type="text/javascript">
+  let localVideo = document.getElementById('local_video');
+  //let remoteVideo = document.getElementById('remote_video');
+  let localStream = null;
+  //let peerConnection = null;
+  //let textForSendSdp = document.getElementById('text_for_send_sdp');
+  //let textToReceiveSdp = document.getElementById('text_for_receive_sdp');
+
+  // ==== (2) 録画の準備 ====
+  // --- recording ---
+  let recorder =  null;
+  let blobUrl = null;
+  let chunks = [];
+  const playbackVideo =  document.getElementById('playback_video');
+  // ==== (2) 録画の準備 ====
+  // ==== (3) ダウンロードの準備 ====
+  const anchor = document.getElementById('downloadlink');
+  // ==== (3) ダウンロードの準備 ====
+
+  // ==== (2) 録画 ====
+  // -- 録画開始 --
+  function startRecording() {
+    // チェック
+    if (! mixStream) {
+      console.warn('stream not ready');
+      return;      
+    }
+    if (recorder) {
+      console.warn('already recording');
+      return;
+    }
+    recorder = new MediaRecorder(mixStream);
+    /* -- option を使う場合のサンプル --
+    const options = {
+      audioBitsPerSecond : 64000,
+      videoBitsPerSecond : 512000,
+      mimeType : 'video/webm; codecs=vp9'
+    };
+    recorder = new MediaRecorder(mixStream, options);    
+    -- option を使う場合のサンプル ---*/
+    
+    chunks = []; // 格納場所をクリア
+    
+    // 録画進行中に、インターバルに合わせて発生するイベント
+    recorder.ondataavailable = function(evt) {
+      console.log("data available: evt.data.type=" + evt.data.type + " size=" + evt.data.size);
+      chunks.push(evt.data);
+    };
+    
+    // 録画停止時のイベント
+    recorder.onstop = function(evt) {
+      console.log('recorder.onstop(), so playback');
+      recorder = null;
+      playRecorded();
+    };
+    // 録画スタート
+    recorder.start(1000); // インターバルは1000ms
+    console.log('start recording');
+  }
+  // -- 録画停止 -- 
+  function stopRecording() {
+    if (recorder) {
+      recorder.stop();
+      console.log("stop recording");
+    }
+  }
+  // -- 再生 --
+  function playRecorded() {
+    if (! blobUrl) {
+      window.URL.revokeObjectURL(blobUrl);
+      blobUrl = null;
+    }
+    // Blob
+    const videoBlob = new Blob(chunks, { type: "video/webm" });
+    
+    // 再生できるようにURLを生成
+    blobUrl = window.URL.createObjectURL(videoBlob);
+    
+    // ==== (3) ダウンロード ====
+    // ダウンロードの準備
+    anchor.download = 'recorded.webm';
+    anchor.href = blobUrl;
+    // ==== (3) ダウンロード ====
+    // 録画した内容を再生
+    if (blobUrl) {
+      playbackVideo.src = blobUrl;
+      
+      // 再生終了時の処理
+      playbackVideo.onended = function() {
+        playbackVideo.pause();
+        playbackVideo.src = "";
+      };
+      // 再生開始
+      playbackVideo.play();
+    }
+  }
+  // ==== (2) 録画 ====
+
+  // ---- for multi party -----
+  //let peerConnections = [];
+  let remoteStreams = [];
+  let remoteVideos = [];
+  const MAX_CONNECTION_COUNT = 3;
+
+  // --- multi video ---
+  let container = document.getElementById('container');
+  _assert('container', container);
+  let mixCanvas = document.getElementById('mix_canvas');
+  _assert('canvas', mixCanvas);
+
+  // --- prefix -----
+  navigator.getUserMedia  = navigator.getUserMedia    || navigator.webkitGetUserMedia ||
+                            navigator.mozGetUserMedia || navigator.msGetUserMedia;
+  RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+  RTCSessionDescription = window.RTCSessionDescription || window.webkitRTCSessionDescription || window.mozRTCSessionDescription;
+
+  // --- mcu ----
+  let mcu = new BrowserMCU();
+  mcu.init(
+    mixCanvas,
+    container,
+    BrowserMCU.AUDIO_MODE_ALL
+  );
+  let mixStream = null;
+
+  // ----- use skyway room ----
+  //const myApiKey = '';
+  //let peer = new Peer({key: myApiKey});
+  let peer = null;
+  let meshRoom = null;
+
+  function getApiKey() {
+    let key = document.getElementById('api_key_text').value;
+    return key;
+  }
+
+  function joinRoom() {
+    let apiKey = getApiKey();
+    if ((! apiKey) || (apiKey === '')) {
+      alert('Please set your API Key');
+      return;
+    }
+    peer = new Peer({key: apiKey});
+
+    meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
+    mcu.startMix();
+    mixStream = mcu.getMixStream();
+    playVideo(localVideo, mixStream);
+
+    meshRoom.on('stream', function(stream) {
+      let remoteId = stream.peerId;
+      //attachVideo(remoteId, stream);
+      mcu.addRemoteVideo(stream);
+      mcu.addRemoteAudio(stream);
+      remoteStreams[remoteId] = stream;
+    });
+    meshRoom.on('removeStream', function(stream) {
+      console.log('--removeStream--- ');
+      mcu.removeRemoteAudio(stream);
+      mcu.removeRemoteVideo(stream);
+    });
+
+    meshRoom.on('peerLeave', function(peerId) {
+      console.log('--peerLeave--- id=' + peerId);
+      //detachVideo(peerId);
+
+      let stream = remoteStreams[peerId];
+      if (stream) {
+        mcu.removeRemoteAudio(stream);
+        mcu.removeRemoteVideo(stream);
+        delete remoteStreams[peerId];
+      }
+    });
+  }
+
+  function leaveRoom() {
+    pauseVideo(localVideo);
+    removeAllRemoteAudio();
+    removeAllRemoteVideo();
+    mcu.stopMix();
+    mixStream = null;
+
+    if (meshRoom) {
+       meshRoom.close();
+    }
+    //removeAllVideo();
+  }
+
+
+
+
+
+  // -- room名を取得 --
+  function getRoomName() { // たとえば、 URLに  ?roomname  とする
+    let url = document.location.href;
+    let args = url.split('?');
+    if (args.length > 1) {
+      let room = args[1];
+      if (room != '') {
+        return room;
+      }
+    }
+    return '_testroom';
+  }
+
+/*---------------------------
+  // ---- for multi party -----
+  function isReadyToConnect() {
+    if (localStream) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+
+  // --- video elements ---
+  function attachVideo(id, stream) {
+    let video = addRemoteVideoElement(id);
+    playVideo(video, stream);
+    video.volume = 1.0;
+  }
+
+  function detachVideo(id) {
+    let video = getRemoteVideoElement(id);
+    pauseVideo(video);
+    deleteRemoteVideoElement(id);
+  }
+  
+  function isRemoteVideoAttached(id) {
+    if (remoteVideos[id]) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  function addRemoteVideoElement(id) {
+    _assert('addRemoteVideoElement() video must NOT EXIST', (! remoteVideos[id]));
+    let video = createVideoElement('remote_video_' + id);
+    remoteVideos[id] = video;
+    return video;
+  }
+
+  function getRemoteVideoElement(id) {
+    let video = remoteVideos[id];
+    _assert('getRemoteVideoElement() video must exist', video);
+    return video;
+  }
+
+  function deleteRemoteVideoElement(id) {
+    _assert('deleteRemoteVideoElement() stream must exist', remoteVideos[id]);
+    removeVideoElement('remote_video_' + id);
+    delete remoteVideos[id];
+  }
+
+  function createVideoElement(elementId) {
+    let video = document.createElement('video');
+    video.width = '240';
+    video.height = '180';
+    video.id = elementId;
+
+    video.style.border = 'solid black 1px';
+    video.style.margin = '2px';
+
+    container.appendChild(video);
+
+    return video;
+  }
+
+  function removeVideoElement(elementId) {
+    let video = document.getElementById(elementId);
+    _assert('removeVideoElement() video must exist', video);
+
+    container.removeChild(video);
+    return video;
+  }
+
+  function removeAllVideo() {
+    console.log('===== removeAllRemoteVideo ======');
+    for(let key in remoteVideos) {
+      let video = remoteVideos[key];
+      video.pause();
+      video.srcObject = null;
+      container.removeChild(video);
+    }
+    remoteVideos = [];
+  }
+---------------------------------*/
+
+/*------------------------
+  // ---------------------- media handling ----------------------- 
+  // start local video
+  function startVideo() {
+    getDeviceStream({video: true, audio: true}) // audio: false <-- ontrack once, audio:true --> ontrack twice!!
+    .then(function (stream) { // success
+      localStream = stream;
+      playVideo(localVideo, stream);
+    }).catch(function (error) { // error
+      console.error('getUserMedia error:', error);
+      return;
+    });
+  }
+
+  // stop local video
+  function stopVideo() {
+    pauseVideo(localVideo);
+    stopLocalStream(localStream);
+    localStream = null;
+  }
+-----------------------*/
+
+  function stopLocalStream(stream) {
+    let tracks = stream.getTracks();
+    if (! tracks) {
+      console.warn('NO tracks');
+      return;
+    }
+    
+    for (let track of tracks) {
+      track.stop();
+    }
+  }
+ 
+/*----------------------- 
+  function getDeviceStream(option) {
+    if ('getUserMedia' in navigator.mediaDevices) {
+      console.log('navigator.mediaDevices.getUserMadia');
+      return navigator.mediaDevices.getUserMedia(option);
+    }
+    else {
+      console.log('wrap navigator.getUserMadia with Promise');
+      return new Promise(function(resolve, reject){    
+        navigator.getUserMedia(option,
+          resolve,
+          reject
+        );
+      });      
+    }
+  }
+-----------------------*/
+
+  function playVideo(element, stream) {
+    if ('srcObject' in element) {
+      element.srcObject = stream;
+    }
+    else {
+      element.src = window.URL.createObjectURL(stream);
+    }
+    element.play();
+    element.volume = 0;
+  }
+
+  function pauseVideo(element) {
+    element.pause();
+    if ('srcObject' in element) {
+      element.srcObject = null;
+    }
+    else {
+      if (element.src && (element.src !== '') ) {
+        window.URL.revokeObjectURL(element.src);
+      }
+      element.src = '';
+    }
+  }
+
+
+
+</script>
+</html>
+
