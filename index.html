@@ -85,7 +85,7 @@
       return;
     }
     peer = new Peer({key: apiKey});
-    peer.on('open', function() {
+    //peer.on('open', function() {
       meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
       meshRoom.on('stream', function(stream) {
         let remoteId = stream.peerId;
@@ -94,7 +94,7 @@
       meshRoom.on('peerLeave', function(peerId) {
         detachVideo(peerId);
       });
-    });
+    //});
     
     /*
     meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
