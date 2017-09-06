@@ -87,6 +87,9 @@
     peer = new Peer({key: apiKey});
     setTimeout(function() {
       meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
+      meshRoom.on('open', function() {
+        console.log('joined the room');
+      });
       meshRoom.on('stream', function(stream) {
         let remoteId = stream.peerId;
         attachVideo(remoteId, stream);
@@ -94,7 +97,7 @@
       meshRoom.on('peerLeave', function(peerId) {
         detachVideo(peerId);
       });
-    }, 500);
+    }, 0);
     
     /*
     meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
