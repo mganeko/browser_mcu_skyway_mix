@@ -196,35 +196,36 @@
       return;
     }
     peer = new Peer({key: apiKey});
+    peer.on('open', function() {
+      meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
+      mcu.startMix();
+      mixStream = mcu.getMixStream();
+      playVideo(localVideo, mixStream);
 
-    meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
-    mcu.startMix();
-    mixStream = mcu.getMixStream();
-    playVideo(localVideo, mixStream);
-
-    meshRoom.on('stream', function(stream) {
-      let remoteId = stream.peerId;
-      //attachVideo(remoteId, stream);
-      mcu.addRemoteVideo(stream);
-      mcu.addRemoteAudio(stream);
-      remoteStreams[remoteId] = stream;
-    });
-    meshRoom.on('removeStream', function(stream) {
-      console.log('--removeStream--- ');
-      mcu.removeRemoteAudio(stream);
-      mcu.removeRemoteVideo(stream);
-    });
-
-    meshRoom.on('peerLeave', function(peerId) {
-      console.log('--peerLeave--- id=' + peerId);
-      //detachVideo(peerId);
-
-      let stream = remoteStreams[peerId];
-      if (stream) {
+      meshRoom.on('stream', function(stream) {
+        let remoteId = stream.peerId;
+        //attachVideo(remoteId, stream);
+        mcu.addRemoteVideo(stream);
+        mcu.addRemoteAudio(stream);
+        remoteStreams[remoteId] = stream;
+      });
+      meshRoom.on('removeStream', function(stream) {
+        console.log('--removeStream--- ');
         mcu.removeRemoteAudio(stream);
         mcu.removeRemoteVideo(stream);
-        delete remoteStreams[peerId];
-      }
+      });
+
+      meshRoom.on('peerLeave', function(peerId) {
+        console.log('--peerLeave--- id=' + peerId);
+        //detachVideo(peerId);
+
+        let stream = remoteStreams[peerId];
+        if (stream) {
+          mcu.removeRemoteAudio(stream);
+          mcu.removeRemoteVideo(stream);
+          delete remoteStreams[peerId];
+        }
+      });
     });
   }
 
