@@ -97,7 +97,7 @@
       meshRoom.on('peerLeave', function(peerId) {
         detachVideo(peerId);
       });
-    }, 0);
+    }, 500);
     
     /*
     meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
