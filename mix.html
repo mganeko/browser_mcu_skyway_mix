@@ -196,7 +196,7 @@
       return;
     }
     peer = new Peer({key: apiKey});
-    peer.on('open', function() {
+    setTimeout(function() {
       meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
       mcu.startMix();
       mixStream = mcu.getMixStream();
@@ -226,7 +226,7 @@
           delete remoteStreams[peerId];
         }
       });
-    });
+    }, 500);
   }
 
   function leaveRoom() {
