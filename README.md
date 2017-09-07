@@ -29,7 +29,7 @@ setup in your own web server / Webサーバー上に配置してください
 
 * try GitHub pages / GitHub pages で試す
   * Please allow mganeko.github.io for you API Key / ご利用のAPI Key にmganeko.github.io からのアクセスを許可してください
-  * https://mganeko.github.io/browser_mcu_skyway/mix.html
+  * https://mganeko.github.io/browser_mcu_skyway_mix/mix.html
 
 
 ## How to Use / 使い方
