@@ -179,8 +179,8 @@
   let mixStream = null;
 
   // ----- use skyway room ----
-  //const myApiKey = '';
-  //let peer = new Peer({key: myApiKey});
+  let myApiKey = null; // set your API key
+  const roomName = '_browser_mcu_test_room';
   let peer = null;
   let meshRoom = null;
 
@@ -190,14 +190,15 @@
   }
 
   function joinRoom() {
-    let apiKey = getApiKey();
+    let apiKey = myApiKey || getApiKey();
     if ((! apiKey) || (apiKey === '')) {
       alert('Please set your API Key');
       return;
     }
     peer = new Peer({key: apiKey});
-    setTimeout(function() {
-      meshRoom = peer.joinRoom('_browser_mcu_test_room', {mode: 'mesh', stream: localStream});
+    peer.on('open',function() {
+      console.log('--open--');
+      meshRoom = peer.joinRoom(roomName, {mode: 'mesh', stream: localStream});
       mcu.startMix();
       mixStream = mcu.getMixStream();
       playVideo(localVideo, mixStream);
@@ -226,7 +227,7 @@
           delete remoteStreams[peerId];
         }
       });
-    }, 500);
+    });
   }
 
   function leaveRoom() {
