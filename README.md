@@ -1,8 +1,8 @@
 # Browser MCU Skyway Mix
 
-* Video/Audio mixing sample for Skyway, using [Browser MCU Core](https://github.com/mganeko/browser_mcu_core) library 
+* Video/Audio mixing sample for [Skyway](https://webrtc.ecl.ntt.com/en/), using [Browser MCU Core](https://github.com/mganeko/browser_mcu_core) library 
 * --
-* [Browser MCU Core](https://github.com/mganeko/browser_mcu_core) ライブラリを利用した、Skyway向けの映像/音声合成サンプルです
+* [Browser MCU Core](https://github.com/mganeko/browser_mcu_core) ライブラリを利用した、[Skyway](https://webrtc.ecl.ntt.com)向けの映像/音声合成サンプルです
 
 ## Confirmed Environment / 動作確認環境
 
@@ -28,7 +28,6 @@ setup in your own web server / Webサーバー上に配置してください
 
 * Skyway に登録し、API Key を取得してください。
 * 併せて、自分のサーバーのドメインを、Skywayの利用ドメインに設定してください。
-
 * index.html をChrome/Firefoxで複数開き、それぞれ同じAPIキー指定してください
 * [Start Video] --> [Connect] で Skywayによる通話を開始してください
 * mix.html をChromeで開き、APIキー指定してください
