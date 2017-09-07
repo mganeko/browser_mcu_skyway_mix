@@ -24,6 +24,14 @@ git clone --recursive https://github.com/mganeko/browser_mcu_skyway_mix.git
 
 setup in your own web server / Webサーバー上に配置してください
 
+
+#### Try on GitHub pages / GitHub pages で試す
+
+* try GitHub pages / GitHub pages で試す
+  * Please allow mganeko.github.io for you API Key / ご利用のAPI Key にmganeko.github.io からのアクセスを許可してください
+  * https://mganeko.github.io/browser_mcu_skyway/mix.html
+
+
 ## How to Use / 使い方
 
 * Skyway に登録し、API Key を取得してください。
