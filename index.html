@@ -3,7 +3,12 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
  <title>MCU for Skyway</title>
+ <!-- for skyway 2016 --
  <script type='text/javascript' src='https://cdn.skyway.io/skyway.js'></script>
+ -- for skyway 2016 -->
+ <!-- for skyway 2017 -->
+ <script type='text/javascript' src='https://cdn.webrtc.ecl.ntt.com/skyway-1.0.1.js'></script>
+ <!-- for skyway 2017 -->
  <script>
    function _assert(desc, v) {
      if (v) {
@@ -85,7 +90,7 @@
       alert('Please set your API Key');
       return;
     }
-    peer = new Peer({key: apiKey});
+    peer = new Peer({key: apiKey, debug: 1});
     peer.on('open',function() {
       console.log('--open--');
       meshRoom = peer.joinRoom(roomName, {mode: 'mesh', stream: localStream});

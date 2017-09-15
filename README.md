@@ -12,7 +12,7 @@
 * Web Browser
   * Chrome  58.0.3029.110 (64-bit) for MacOS X
   * Firefox 54.04 (64-bit) for MacOS X
-
+* Skyway Community Edition (2017.09) 
 
 ## Preparation / 準備
 
