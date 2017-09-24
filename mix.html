@@ -182,6 +182,7 @@
     BrowserMCU.AUDIO_MODE_ALL
   );
   let mixStream = null;
+  getApiKeyFromURL()
 
   // ----- use skyway room ----
   let myApiKey = null; // set your API key
@@ -192,6 +193,15 @@
   function getApiKey() {
     let key = document.getElementById('api_key_text').value;
     return key;
+  }
+
+  function getApiKeyFromURL() {
+    const search = window.location.search;
+    const re = new RegExp('apikey=([^&=]+)');
+    const results = re.exec(search);
+    if (results) {
+      document.getElementById('api_key_text').value = results[1];
+    }
   }
 
   function joinRoom() {
